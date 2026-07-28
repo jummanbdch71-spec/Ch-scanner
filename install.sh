@@ -3,12 +3,12 @@
 clear
 
 echo "╔══════════════════════════════════════════════════════════════╗"
-echo "║                                                              ║"
-echo "║     🔥 JUMMAN SCANNER - TERMUX INSTALLER 🔥               ║"
-echo "║     📷 IP Camera & Router Scanner                          ║"
-echo "║     👑 Owner: Jumman                                       ║"
-echo "║     🔐 Password: ch71                                     ║"
-echo "║                                                              ║"
+echo "║                                                              ║
+echo "║     🔥 JUMMAN SCANNER - TERMUX INSTALLER 🔥               ║
+echo "║     📷 IP Camera & Router Scanner                          ║
+echo "║     👑 Owner: Jumman                                       ║
+echo "║     🔐 Password: ch71                                     ║
+echo "║                                                              ║
 echo "╚══════════════════════════════════════════════════════════════╝"
 echo ""
 
@@ -24,22 +24,13 @@ pkg update -y && pkg upgrade -y
 echo "[*] Installing required packages..."
 pkg install -y python python-pip git wget curl nmap
 
-echo "[*] Upgrading pip..."
-pip install --upgrade pip
-
 echo "[*] Installing Python dependencies..."
-pip install python-telegram-bot==20.7
-pip install requests==2.31.0
-pip install urllib3==2.0.7
+pip install --upgrade pip
+pip install requests
 
 echo "[*] Creating directory..."
 mkdir -p ~/jumman_scanner
 cd ~/jumman_scanner
-
-echo "[*] Creating jumman_scanner.py..."
-cat > jumman_scanner.py << 'EOF'
-# [PASTE THE FULL CODE ABOVE HERE]
-EOF
 
 echo "[*] Creating run script..."
 cat > run.sh << 'EOF'
@@ -59,27 +50,25 @@ EOF
 
 chmod +x ~/jumman
 echo 'alias jumman="~/jumman"' >> ~/.bashrc
+source ~/.bashrc
 
 clear
 echo "╔══════════════════════════════════════════════════════════════╗"
-echo "║                                                              ║"
-echo "║     ✅ INSTALLATION COMPLETE!                              ║"
-echo "║                                                              ║"
-echo "║     🔥 Jumman Scanner installed successfully!              ║"
-echo "║     👑 Owner: Jumman                                       ║"
-echo "║     🔐 Password: ch71                                     ║"
 echo "║                                                              ║
-echo "║     📱 Bot: @JummanScannerBot                               ║"
-echo "║                                                              ║"
+echo "║     ✅ INSTALLATION COMPLETE!                              ║
+echo "║                                                              ║
+echo "║     🔥 Jumman Scanner installed successfully!              ║
+echo "║     👑 Owner: Jumman                                       ║
+echo "║     🔐 Password: ch71                                     ║
+echo "║                                                              ║
 echo "╚══════════════════════════════════════════════════════════════╝"
 echo ""
 echo "📌 HOW TO RUN:"
 echo ""
-echo "   python ~/jumman_scanner/jumman_scanner.py"
-echo "   cd ~/jumman_scanner && python jumman_scanner.py"
-echo "   jumman"
-echo "   ./run.sh"
+echo "   1️⃣  python ~/jumman_scanner/jumman_scanner.py"
+echo "   2️⃣  cd ~/jumman_scanner && python jumman_scanner.py"
+echo "   3️⃣  jumman"
+echo "   4️⃣  ./run.sh"
 echo ""
 echo "🔑 PASSWORD: ch71"
-echo "📱 Bot: @JummanScannerBot"
 echo ""
