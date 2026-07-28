@@ -14,7 +14,7 @@
 
 - 📷 **IP Camera Detection** - Find cameras on your network
 - 🌐 **Router Detection** - Tenda, D-Link, TP-Link
-- 💀 **4 Password Testing** - admin, admin1, admin2, admin123
+
 - ⚡ **Super Fast Scanning** - 100+ threads
 - 🔐 **Password Protected** - Secure access
 - 🤖 **Telegram Bot** - Full bot integration
