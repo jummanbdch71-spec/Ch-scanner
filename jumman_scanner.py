@@ -7,7 +7,7 @@
 ║     🔥 JUMMAN SCANNER - TERMUX EDITION 🔥                 ║
 ║     📷 IP Camera & Router Scanner                          ║
 ║     👑 Owner: Jumman                                       ║
-║     🔐 Password Protected                                  ║
+║     🔐 Password: ch71                                     ║
 ║                                                              ║
 ╚══════════════════════════════════════════════════════════════╝
 """
@@ -24,7 +24,6 @@ import re
 import threading
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
-import requests as http_requests
 
 # ============ PASSWORD PROTECTION ============
 REQUIRED_PASSWORD = "ch71"
@@ -53,9 +52,20 @@ def check_password():
     print("Contact the administrator for access.")
     sys.exit(1)
 
+# ============ FIX: Patch imghdr for Python 3.14 ============
+try:
+    import imghdr
+except ImportError:
+    # Create a dummy imghdr module for Python 3.14+
+    import types
+    imghdr = types.ModuleType('imghdr')
+    imghdr.what = lambda f, h=None: None
+    sys.modules['imghdr'] = imghdr
+
 # ============ CHECK DEPENDENCIES ============
 def install_dependencies():
     """Install required packages"""
+    # Fix for Python 3.14 - install python-telegram-bot with patch
     try:
         import telegram
     except ImportError:
@@ -194,6 +204,7 @@ class JummanScanner:
                 
                 if result == 0:
                     try:
+                        import requests as http_requests
                         protocol = 'https' if port == 443 else 'http'
                         url = f"{protocol}://{ip}:{port}"
                         response = http_requests.get(url, timeout=2, verify=False, allow_redirects=True)
@@ -254,6 +265,7 @@ class JummanScanner:
         return results
     
     def test_credentials(self, url, brand):
+        import requests as http_requests
         credentials = [
             ('admin', 'admin'),
             ('admin', 'admin1'),
